@@ -3,11 +3,14 @@ package cn.zero.lcp.medium;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * LCP 03. 机器人大冒险
- *
+ * <p>
  * 力扣团队买了一个可编程机器人，机器人初始位置在原点(0, 0)。小伙伴事先给机器人输入一串指令command，机器人就会无限循环这条指令的步骤进行移动。指令有两种：
  * <p>
  * U: 向y轴正方向移动一格
@@ -48,117 +51,44 @@ import java.util.*;
  * 著作权归领扣网络所有。商业转载请联系官方授权，非商业转载请注明出处。s
  */
 public class Lcp_3_Robot_1 {
-    private static final char U = 'U';
-    private static final char R = 'R';
-    private int coutX = 0;
-    private int coutY = 0;
-    private char[] chars;
-    private List<int[]> list = new ArrayList<>();
-    private boolean isError = false;
-    private boolean isSuccess = false;
-
-    private Map<String, List<int[]>> map = new HashMap<>();
-
     public boolean robot(String command, int[][] obstacles, int x, int y) {
-        chars = command.toCharArray();
-        for (char aChar : chars) {
-            if (U == aChar) {
-                coutY = coutY + 1;
-            } else if (R == aChar) {
-                coutX = coutX + 1;
-            }
+        int dx = 0, dy = 0;
+        char[] cmd = command.toCharArray(); // 把String转为数组，方便遍历。
+        for (char c : cmd) { // 算出up和right各有多少个。
+            if (c == 'U') dy++;
+            else dx++;
         }
-        if (obstacles != null && obstacles.length != 0) {
-            for (int[] obstacle : obstacles) {
-                int obstacleX = obstacle[0];
-                int obstacleY = obstacle[1];
-                int i = obstacleX / coutX;
-                int j = obstacleY / coutY;
-                int fac = i < j ? i : j;
-                int curX = coutX * fac;
-                int curY = coutY * fac;
-                String key = (obstacleX - curX) + "#" + (obstacleY - curY);
-                List<int[]> ints = map.get(key);
-                if (ints == null) {
-                    ints = new ArrayList<>();
-                    ints.add(obstacle);
-                } else {
-                    ints.add(obstacle);
-                }
-                map.put(key, ints);
-            }
-
+        int ans = isPassed(cmd, x, y, dx, dy); // 拿到走到终点的次数。
+        // 先看isPassed函数再往下看。
+        /*
+            为什么isPassed要拿到走的总次数而不直接返回true或false呢
+            比如你发现有一个obstacle是经过的，那么最终答案并不一定是false，
+            因为如果终点在这个点的前面，那么机器人根本不会走到那个点。答案是true。
+        */
+        if (ans == -1) return false; // 终点都没经过，肯定false
+        for (int[] obstacle : obstacles) {
+            int cnt = isPassed(cmd, obstacle[0], obstacle[1], dx, dy);
+            if (cnt != -1 && cnt < ans) return false;
+            //不等于-1，说明经过了，然后再看这个点和终点哪个次数多。ans多，说明这个点在ans前面，返回false。
         }
-        // 将目的地数组给添加到异常数据
-        // 这里直接进行障碍判断
-        int curY = 0;
-        int curX = 0;
-        for (int i1 = 0; i1 <= chars.length; i1++) {
-            if (i1 > 0) {
-                char aChar = chars[i1 - 1];
-                if (U == aChar) {
-                    curY = curY + 1;
-                } else if (R == aChar) {
-                    curX = curX + 1;
-                }
-            }
-            String key = curX + "#" + curY;
-            List<int[]> ints = map.get(key);
-            if (ints != null && !ints.isEmpty()) {
-                isError = true;
-                list.addAll(ints);
-            }
-        }
-
-        // 这里直接进行目的地判断
-        int[] target = {x, y};
-        boolean judge = judge(target);
-        if (judge) {
-            isSuccess = true;
-        }
-        // 综合判断
-        if (!isError) {
-            return isSuccess;
-        } else {
-            for (int[] ints : list) {
-                int x1 = ints[0];
-                int y1 = ints[1];
-                if (x1 <= x && y1 <= y) {
-                    return false;
-                }
-            }
-            return true;
-        }
+        return true;
     }
 
-    private boolean judge(int[] obstacles) {
-        int obstacleX = obstacles[0];
-        int obstacleY = obstacles[1];
-        int i = obstacleX / coutX;
-        int j = obstacleY / coutY;
-        int fac = i < j ? i : j;
-        int curX = coutX * fac;
-        int curY = coutY * fac;
-        if (obstacleX == curX && obstacleY == curY) {
-            return true;
-        } else {
-            for (int i1 = 0; i1 < chars.length; i1++) {
-                char aChar = chars[i1];
-
-                if (U == aChar) {
-                    curY = curY + 1;
-                } else if (R == aChar) {
-                    curX = curX + 1;
-                }
-                if (curX == obstacleX && curY == obstacleY) {
-                    return true;
-                }
-
-            }
+    // 判断是否经过该点，经过返回走的次数，没经过返回-1。
+    public int isPassed(char[] cmd, int x, int y, int dx, int dy) {
+        int round = Math.min(x / dx, y / dy); // 计算走到第x-1或y-1层需要多少轮
+        int cnt = cmd.length * round;  // 前几轮的总次数
+        dx *= round;
+        dy *= round; // 在第x-1或y-1层时的位置。
+        if (dx == x && dy == y) return cnt; // 正好就是要找的点，直接返回。
+        for (char c : cmd) { // 遍历第x层或y层，如果经过，那么答案一定会遍历到。
+            if (c == 'U') dy++; // 要按command的顺序走
+            else dx++;
+            cnt++; // 不要忘了每遍历一次，次数都要加1
+            if (dx == x && dy == y) return cnt; // 一旦找到，直接返回所需要的次数。
         }
-        return false;
+        return -1;
     }
-
 
     @Test
     public void test() {
