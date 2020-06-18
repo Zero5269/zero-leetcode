@@ -1,4 +1,4 @@
-package cn.zero.lcp.easy;
+package cn.zero.leetcode.lcp.easy;
 
 import org.junit.Assert;
 import org.junit.Test;

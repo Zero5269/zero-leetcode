@@ -1,4 +1,4 @@
-package cn.zero.all.medium;
+package cn.zero.leetcode.all.medium;
 
 import org.junit.Assert;
 import org.junit.Test;

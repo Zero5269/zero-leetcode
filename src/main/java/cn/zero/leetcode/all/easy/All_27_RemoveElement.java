@@ -1,5 +1,5 @@
 
-package cn.zero.all.easy;
+package cn.zero.leetcode.all.easy;
 
 import org.junit.Assert;
 import org.junit.Test;
